@@ -1,0 +1,1 @@
+"data_extraction/templates/map_templates/*.png" filter=lfs diff=lfs merge=lfs -text
