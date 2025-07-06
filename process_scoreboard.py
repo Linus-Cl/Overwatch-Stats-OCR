@@ -5,13 +5,16 @@ import pytesseract
 import json
 import re
 from thefuzz import fuzz
-from constants import KNOWN_PLAYERS
 
+# --- ACTION REQUIRED: CONFIRM/EDIT THIS LIST ---
+KNOWN_PLAYERS = ["RETRAC", "JISOO", "SAMPHIL"]
+# ----------------------------------------------------
 
 # --- CONFIGURATION ---
-HERO_TEMPLATES_PATH = "data_extraction/templates/hero_templates/"
-MAP_TEMPLATES_PATH = "data_extraction/templates/map_templates/"
-NAME_TEMPLATES_PATH = "data_extraction/templates/name_templates/"
+SCOREBOARD_PATH = "scoreboards/samoa_score.png"
+HERO_TEMPLATES_PATH = "hero_templates/"
+MAP_TEMPLATES_PATH = "map_templates/"
+NAME_TEMPLATES_PATH = "name_templates/"
 
 # --- GAMEMODE CONFIG ---
 KNOWN_GAMEMODES = ["PUSH", "CONTROL", "HYBRID", "ESCORT", "FLASHPOINT", "CLASH"]
@@ -103,17 +106,13 @@ def find_best_map_match(map_roi, map_templates, threshold):
 
 
 def analyze_scoreboard(scoreboard_img_path):
-    """
-    Analyzes an Overwatch scoreboard screenshot to extract game data.
-    """
     if not os.path.exists(scoreboard_img_path):
         print(f"Error: Scoreboard image not found at {scoreboard_img_path}")
-        return None
+        return
     scoreboard_img = cv2.imread(scoreboard_img_path)
     if scoreboard_img is None:
         print(f"Error: Could not read image file {scoreboard_img_path}")
-        return None
-
+        return
 
     # Load templates
     map_templates = {
@@ -281,29 +280,7 @@ def analyze_scoreboard(scoreboard_img_path):
     team1_players_sorted = sorted(team1_players_found, key=lambda p: p["y"])
     team2_players_sorted = sorted(team2_players_found, key=lambda p: p["y"])
 
-    # --- 7. VALIDATE DATA & ASSEMBLE FINAL ---
-    print("\n--- VALIDATING DATA ---")
-    known_players_found = any(p["name"] in KNOWN_PLAYERS for p in team1_players_sorted) or any(
-        p["name"] in KNOWN_PLAYERS for p in team2_players_sorted
-    )
-
-    if (
-        detected_map == "Unknown"
-        or match_result == "UNKNOWN"
-        or not known_players_found
-    ):
-        print("--- VALIDATION FAILED ---")
-        if detected_map == "Unknown":
-            print("Reason: Map could not be determined.")
-        if match_result == "UNKNOWN":
-            print("Reason: Match result (Victory/Defeat) could not be determined.")
-        if not known_players_found:
-            print("Reason: No known players were found in the screenshot.")
-        print("--- Analysis aborted, no data will be returned. ---")
-        return None
-
-    print("--- Validation successful, proceeding with data assembly. ---")
-
+    # --- 7. ASSEMBLE FINAL DATA ---
     final_data = {
         "map": detected_map,
         "gamemode": detected_gamemode,
@@ -345,4 +322,7 @@ def analyze_scoreboard(scoreboard_img_path):
     print("\n\n--- EXTRACTION COMPLETE ---")
     print("Final structured data:")
     print(json.dumps(final_data, indent=2))
-    return final_data
+
+
+if __name__ == "__main__":
+    analyze_scoreboard(SCOREBOARD_PATH)

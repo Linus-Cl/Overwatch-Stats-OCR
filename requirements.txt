@@ -1,0 +1,17 @@
+gspread
+
+# Used to load environment variables from a .env file
+python-dotenv
+google-auth-oauthlib
+google-auth-httplib2
+pandas
+dash
+plotly
+gunicorn
+pyautogui
+pynput
+opencv-python
+pytesseract
+thefuzz
+python-Levenshtein
+PyInstaller
