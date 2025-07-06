@@ -209,6 +209,8 @@ __marimo__/
 # --- CUSTOM ---
 # Ignore sensitive credentials
 google_sheets_integration/client_secret.json
+config.json
+token.json
 
 # Ignore screenshots folder
 screenshots/

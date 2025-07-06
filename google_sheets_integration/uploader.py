@@ -1,134 +1,144 @@
 import gspread
-from google.oauth2.service_account import Credentials
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+import json
+import os
 import pandas as pd
+from datetime import datetime
+
+from constants import resource_path
 
 # --- CONFIGURATION ---
-# This scope allows the app to read and write to Google Sheets
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-# Path to your client secret file (downloaded from Google Cloud Console)
-CLIENT_SECRET_FILE = "google_sheets_integration/client_secret.json"
-# The name of the Google Sheet to upload to
-SHEET_ID = "1GA_Y0fQ9MqqTfyr9CngHvSyqOKDlq-7TpXVVyb7r3A0"  # <--- REPLACE THIS WITH YOUR ACTUAL SHEET ID
+CLIENT_SECRET_FILE = resource_path("google_sheets_integration/client_secret.json")
+TOKEN_FILE = "token.json"
+CONFIG_FILE = "config.json"
+
+# --- HERO TO ROLE MAPPING ---
+HERO_ROLES = {
+    # Damage
+    "Ashe": "Damage", "Bastion": "Damage", "Cassidy": "Damage", "Echo": "Damage",
+    "Genji": "Damage", "Hanzo": "Damage", "Junkrat": "Damage", "Mei": "Damage",
+    "Pharah": "Damage", "Reaper": "Damage", "Sojourn": "Damage", "Soldier": "Damage",
+    "Sombra": "Damage", "Symmetra": "Damage", "Torbjoern": "Damage", "Tracer": "Damage",
+    "Widowmaker": "Damage", "Venture": "Damage",
+    # Tank
+    "D.Va": "Tank", "Doomfist": "Tank", "Junkerqueen": "Tank", "Orisa": "Tank",
+    "Ramattra": "Tank", "Reinhardt": "Tank", "Roadhog": "Tank", "Sigma": "Tank",
+    "Winston": "Tank", "Wrecking Ball": "Tank", "Zarya": "Tank", "Mauga": "Tank",
+    # Support
+    "Ana": "Support", "Baptiste": "Support", "Brigitte": "Support", "Illari": "Support",
+    "Kiriko": "Support", "Lifeweaver": "Support", "Lucio": "Support", "Mercy": "Support",
+    "Moira": "Support", "Zenyatta": "Support"
+}
 
 
-def get_sheet(sheet_id):
-    """
-    Authenticates with the Google Sheets API and returns a worksheet object.
-    """
+def load_config():
+    if not os.path.exists(CONFIG_FILE): return None
+    with open(CONFIG_FILE, "r") as f: return json.load(f)
+
+def get_credentials():
+    creds = None
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            from google.auth.transport.requests import Request
+            creds.refresh(Request())
+        else:
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
+                creds = flow.run_local_server(port=0)
+            except FileNotFoundError:
+                print(f"ERROR: '{CLIENT_SECRET_FILE}' not found. Please run setup.py first.")
+                return None
+        with open(TOKEN_FILE, 'w') as token: token.write(creds.to_json())
+    return creds
+
+def get_sheet(sheet_id, creds):
     try:
-        # Authenticate using OAuth 2.0 for desktop applications
-        # This will open a browser window for you to authorize the first time
-        client = gspread.oauth(credentials_filename=CLIENT_SECRET_FILE, scopes=SCOPES)
-        sheet = client.open_by_key(sheet_id).sheet1  # Get the first worksheet
-        return sheet
-    except FileNotFoundError:
-        print(f"ERROR: Client secret file not found at '{CLIENT_SECRET_FILE}'.")
-        print(
-            "Please ensure you have downloaded 'client_secret.json' from Google Cloud Console and placed it in the 'google_sheets_integration/' directory."
-        )
-        return None
+        client = gspread.authorize(creds)
+        return client.open_by_key(sheet_id).sheet1
     except gspread.exceptions.SpreadsheetNotFound:
         print(f"ERROR: Google Sheet with ID '{sheet_id}' not found.")
-        print(
-            "Please ensure the Google Sheet exists and you have shared it with the email address that authorized this application."
-        )
         return None
     except Exception as e:
-        print(f"An unexpected error occurred during Google Sheets authentication: {e}")
+        print(f"An unexpected error occurred: {e}")
         return None
 
+def get_next_match_id(sheet):
+    """Gets the last Match ID from the sheet and increments it."""
+    try:
+        last_id = sheet.col_values(1)[-1]
+        return int(last_id) + 1 if last_id.isdigit() else 1
+    except (IndexError, ValueError):
+        return 1
 
-def flatten_json_for_sheet(data):
+def flatten_json_for_sheet(data, config, match_id):
     """
-    Flattens the complex JSON structure into a single list (row)
-    that can be easily appended to a Google Sheet.
+    Flattens the JSON, generates derived data, and prepares the row for upload.
     """
-    # --- Basic Info ---
+    date_str = data.get("date", "")
+    try:
+        date_obj = datetime.strptime(date_str, '%m/%d/%Y')
+        year = date_obj.year
+        month = date_obj.strftime('%B')
+    except (ValueError, TypeError):
+        date_obj, year, month = None, "", ""
+
     row = [
-        data.get("date", ""),
+        match_id,
+        date_obj.strftime('%Y-%m-%d') if date_obj else "",
+        config.get("current_season", ""),
+        year,
+        month,
         data.get("map", ""),
         data.get("gamemode", ""),
         data.get("result", ""),
         data.get("length", ""),
+        data.get("team1", {}).get("score", ""),
+        data.get("team1", {}).get("side", ""),
+        data.get("team2", {}).get("score", ""),
+        data.get("team2", {}).get("side", ""),
     ]
 
-    # --- Team Info ---
-    team1 = data.get("team1", {})
-    team2 = data.get("team2", {})
-    row.extend([team1.get("score", ""), team1.get("side", "")])
-    row.extend([team2.get("score", ""), team2.get("side", "")])
+    player_map = {p["player_name"]: p for p in data.get("team1", {}).get("players", [])}
+    player_map.update({p["player_name"]: p for p in data.get("team2", {}).get("players", [])})
 
-    # --- Player Info (assuming a fixed order based on KNOWN_PLAYERS) ---
-    # This part is crucial and needs to be robust. We create a dictionary
-    # to hold player data for easy lookup.
-    player_map = {}
-    for p_data in team1.get("players", []):
-        player_map[p_data["player_name"]] = p_data
-    for p_data in team2.get("players", []):
-        player_map[p_data["player_name"]] = p_data
-
-    # Now, we iterate through the *known* players from your constants to ensure
-    # the order is always the same in the spreadsheet.
-    from constants import KNOWN_PLAYERS
-
-    for player_name in KNOWN_PLAYERS:
+    for player_name in config["known_players"]:
         player_info = player_map.get(player_name)
         if player_info:
-            row.append(player_info.get("hero", "N/A"))
+            hero = player_info.get("hero", "N/A")
+            role = HERO_ROLES.get(hero, "Unknown")
+            row.extend([hero, role])
         else:
-            # This player wasn't in the match
-            row.append("nicht dabei")
+            row.extend(["Not in game", "Not in game"])
 
     return row
 
 
-def get_header_row():
-    """
-    Generates the header row for the Google Sheet based on the data structure.
-    This ensures consistency between the data and the column titles.
-    """
-    header = [
-        "Datum",
-        "Map",
-        "Gamemode",
-        "Win Lose",
-        "Game Length",
-        "Team 1 Score",
-        "Team 1 Side",
-        "Team 2 Score",
-        "Team 2 Side",
-    ]
-    # Add player hero columns dynamically from constants
-    from constants import KNOWN_PLAYERS
-
-    for player in KNOWN_PLAYERS:
-        header.append(f"{player} Hero")
-
-    return header
-
-
 def upload_to_sheet(data):
-    """
-    Main function to upload a single game's data to the Google Sheet.
-    It flattens the data, gets the sheet, and appends the new row.
-    It also checks if the header exists and adds it if needed.
-    """
+    """Main function to upload a single game's data to the Google Sheet."""
     print("--- GOOGLE SHEETS UPLOAD ---")
-    sheet = get_sheet(SHEET_ID)
+    config = load_config()
+    if not config:
+        print("└──> Upload failed: config.json not found. Please run setup.py first.")
+        return
+
+    creds = get_credentials()
+    if not creds:
+        print("└──> Upload failed: Could not get Google credentials.")
+        return
+
+    sheet = get_sheet(config["sheet_id"], creds)
     if not sheet:
         print("└──> Upload failed: Could not access the worksheet.")
         return
 
-    # Check if the sheet is empty to add a header row
-    if not sheet.get_all_values():
-        print("  - Sheet is empty. Adding header row...")
-        header = get_header_row()
-        sheet.append_row(header)
-        print("    └──> Header row added successfully.")
-
-    # Prepare and append the data row
-    new_row = flatten_json_for_sheet(data)
-    print(f"  - Appending new game data: {new_row}")
+    next_id = get_next_match_id(sheet)
+    new_row = flatten_json_for_sheet(data, config, next_id)
+    
+    print(f"  - Appending new game data (Match ID: {next_id}): {new_row}")
     try:
         sheet.append_row(new_row)
         print("└──> Successfully uploaded data to Google Sheets.")

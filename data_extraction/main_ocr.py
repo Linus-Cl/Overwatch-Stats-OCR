@@ -5,13 +5,13 @@ import pytesseract
 import json
 import re
 from thefuzz import fuzz
-from constants import KNOWN_PLAYERS
-
+from constants import resource_path
 
 # --- CONFIGURATION ---
-HERO_TEMPLATES_PATH = "data_extraction/templates/hero_templates/"
-MAP_TEMPLATES_PATH = "data_extraction/templates/map_templates/"
-NAME_TEMPLATES_PATH = "data_extraction/templates/name_templates/"
+HERO_TEMPLATES_PATH = resource_path("data_extraction/templates/hero_templates/")
+MAP_TEMPLATES_PATH = resource_path("data_extraction/templates/map_templates/")
+NAME_TEMPLATES_PATH = resource_path("data_extraction/templates/name_templates/")
+CONFIG_FILE = "config.json"
 
 # --- GAMEMODE CONFIG ---
 KNOWN_GAMEMODES = ["PUSH", "CONTROL", "HYBRID", "ESCORT", "FLASHPOINT", "CLASH"]
@@ -23,6 +23,16 @@ MAP_CONFIDENCE_THRESHOLD = 0.80
 HERO_DETECTION_THRESHOLD = 0.70
 NAME_DETECTION_THRESHOLD = 0.85
 RESULT_SIMILARITY_THRESHOLD = 75
+
+
+def load_known_players():
+    """Loads known player names from config.json."""
+    if not os.path.exists(CONFIG_FILE):
+        print(f"Error: '{CONFIG_FILE}' not found. Please run setup.py first.")
+        return []
+    with open(CONFIG_FILE, "r") as f:
+        config = json.load(f)
+        return config.get("known_players", [])
 
 
 def find_heroes_in_roi(roi, hero_templates, threshold):
@@ -114,6 +124,9 @@ def analyze_scoreboard(scoreboard_img_path):
         print(f"Error: Could not read image file {scoreboard_img_path}")
         return None
 
+    KNOWN_PLAYERS = load_known_players()
+    if not KNOWN_PLAYERS:
+        return None
 
     # Load templates
     map_templates = {
@@ -131,7 +144,7 @@ def analyze_scoreboard(scoreboard_img_path):
         if p.endswith(".png")
     }
     name_templates = {
-        name: cv2.imread(os.path.join(NAME_TEMPLATES_PATH, f"{name}.png"))
+        name: cv2.imread(os.path.join(NAME_TEMPLATES_PATH, f"{name.lower()}.png"))
         for name in KNOWN_PLAYERS
     }
 
@@ -292,7 +305,7 @@ def analyze_scoreboard(scoreboard_img_path):
         or match_result == "UNKNOWN"
         or not known_players_found
     ):
-        print("--- VALIDATION FAILED ---")
+        print("---" + " VALIDATION FAILED ---")
         if detected_map == "Unknown":
             print("Reason: Map could not be determined.")
         if match_result == "UNKNOWN":

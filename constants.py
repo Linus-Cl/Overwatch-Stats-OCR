@@ -1,13 +1,17 @@
-# --- ACTION REQUIRED: CONSTANT VALUES THAT NEED TO BE ADJUSTED ---
+import sys
+import os
 
-# Enter the exact names (in caps) of players you want to log:
-KNOWN_PLAYERS = ["RETRAC", "JISOO", "SAMPHIL"]
 
-# download-url of your google sheet:
-url = "https://drive.google.com/uc?export=download&id=1dMJ5nniCYicuOyf6JYXhNymbn7yikGuV"
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
 
-# names as displayed in plots
-players = ["Bobo", "Phil", "Steven"]
+    return os.path.join(base_path, relative_path)
+
 
 # --- AUTOMATION CONFIG ---
 # The key to press to trigger the screenshot and analysis
