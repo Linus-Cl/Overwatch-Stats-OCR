@@ -1,0 +1,9 @@
+{
+    "known_players": [
+        "PLAYER1",
+        "PLAYER2",
+        "PLAYER3"
+    ],
+    "sheet_id": "YOUR_GOOGLE_SHEET_ID_WILL_BE_GENERATED_HERE",
+    "sheet_csv_url": "YOUR_GOOGLE_SHEET_CSV_DOWNLOAD_URL_WILL_BE_GENERATED_HERE"
+}
