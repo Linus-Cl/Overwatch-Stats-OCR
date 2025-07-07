@@ -13,6 +13,13 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+# --- TESSERACT CONFIG ---
+# If tesseract is not in your PATH, include the full path to the Tesseract executable.
+# Example for Windows: r'C:/Program Files/Tesseract-OCR/tesseract.exe'
+# Example for macOS (if installed with Homebrew): '/opt/homebrew/bin/tesseract'
+TESSERACT_CMD_PATH = None # Set to None to use system PATH
+
+
 # --- AUTOMATION CONFIG ---
 # The key to press to trigger the screenshot and analysis
 # You can find key names here: https://pynput.readthedocs.io/en/latest/keyboard.html#pynput.keyboard.Key
