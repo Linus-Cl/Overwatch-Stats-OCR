@@ -5,7 +5,11 @@ import pytesseract
 import json
 import re
 from thefuzz import fuzz
-from constants import resource_path
+from constants import resource_path, TESSERACT_CMD_PATH
+
+# If a Tesseract path is specified in constants, set it
+if TESSERACT_CMD_PATH:
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD_PATH
 
 # --- CONFIGURATION ---
 HERO_TEMPLATES_PATH = resource_path("data_extraction/templates/hero_templates/")

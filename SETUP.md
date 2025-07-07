@@ -62,9 +62,11 @@ Now that you have your credentials, you can set up the project on your computer.
 
 ---
 
-### **Part 3: Automated Configuration**
+### **Part 3: Automated Configuration & Template Generation**
 
-This is the final setup step. This script will connect to your Google Account, create the spreadsheet, and save your configuration.
+This is the final setup step. This script will connect to your Google Account, create the spreadsheet, help you create name templates, and save your configuration.
+
+**Before you run this step, please have a clear, full-screen scoreboard screenshot ready. You will need the path to this file.**
 
 1.  **Run the Setup Script:**
     *   In your terminal, run:
@@ -73,7 +75,11 @@ This is the final setup step. This script will connect to your Google Account, c
         ```
 2.  **Follow the Prompts:**
     *   The script will first ask you to enter the player names you want to track.
-    *   Next, it will automatically open a new tab in your web browser, asking you to sign in to your Google Account and grant permission. **Please approve these permissions.**
+    *   It will then ask if you want to generate name templates automatically. It is **highly recommended** that you do this.
+    *   You will be asked to provide the full path to your scoreboard screenshot.
+    *   An image window will pop up, with a name highlighted in a green box. In the terminal, you will be asked to confirm if this is the correct player. Type `y` for yes, `n` for no, or `s` to skip that player.
+    *   This process will repeat until all players have been found or skipped.
+    *   Next, the script will automatically open a new tab in your web browser, asking you to sign in to your Google Account and grant permission. **Please approve these permissions.**
     *   Once you grant permission, the script will create the Google Sheet and a local `config.json` file.
 
 ---
