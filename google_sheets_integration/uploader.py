@@ -17,25 +17,60 @@ CONFIG_FILE = "config.json"
 # --- HERO TO ROLE MAPPING ---
 HERO_ROLES = {
     # Damage
-    "Ashe": "Damage", "Bastion": "Damage", "Cassidy": "Damage", "Echo": "Damage",
-    "Genji": "Damage", "Hanzo": "Damage", "Junkrat": "Damage", "Mei": "Damage",
-    "Pharah": "Damage", "Reaper": "Damage", "Sojourn": "Damage", "Soldier": "Damage",
-    "Sombra": "Damage", "Symmetra": "Damage", "Torbjoern": "Damage", "Tracer": "Damage",
-    "Widowmaker": "Damage", "Venture": "Damage",
+    "Ashe": "Damage",
+    "Bastion": "Damage",
+    "Cassidy": "Damage",
+    "Echo": "Damage",
+    "Freja": "Damage",
+    "Genji": "Damage",
+    "Hanzo": "Damage",
+    "Junkrat": "Damage",
+    "Mei": "Damage",
+    "Pharah": "Damage",
+    "Reaper": "Damage",
+    "Sojourn": "Damage",
+    "Soldier": "Damage",
+    "Sombra": "Damage",
+    "Symmetra": "Damage",
+    "Torbjoern": "Damage",
+    "Tracer": "Damage",
+    "Widowmaker": "Damage",
+    "Venture": "Damage",
     # Tank
-    "D.Va": "Tank", "Doomfist": "Tank", "Junkerqueen": "Tank", "Orisa": "Tank",
-    "Ramattra": "Tank", "Reinhardt": "Tank", "Roadhog": "Tank", "Sigma": "Tank",
-    "Winston": "Tank", "Wrecking Ball": "Tank", "Zarya": "Tank", "Mauga": "Tank",
+    "D.Va": "Tank",
+    "Doomfist": "Tank",
+    "Hazard": "Tank",
+    "Junkerqueen": "Tank",
+    "Orisa": "Tank",
+    "Ramattra": "Tank",
+    "Reinhardt": "Tank",
+    "Roadhog": "Tank",
+    "Sigma": "Tank",
+    "Winston": "Tank",
+    "Wrecking Ball": "Tank",
+    "Zarya": "Tank",
+    "Mauga": "Tank",
     # Support
-    "Ana": "Support", "Baptiste": "Support", "Brigitte": "Support", "Illari": "Support",
-    "Kiriko": "Support", "Lifeweaver": "Support", "Lucio": "Support", "Mercy": "Support",
-    "Moira": "Support", "Zenyatta": "Support"
+    "Ana": "Support",
+    "Baptiste": "Support",
+    "Brigitte": "Support",
+    "Illari": "Support",
+    "Juno": "Support",
+    "Kiriko": "Support",
+    "Lifeweaver": "Support",
+    "Lucio": "Support",
+    "Mercy": "Support",
+    "Moira": "Support",
+    "Zenyatta": "Support",
 }
 
 
 def load_config():
-    if not os.path.exists(CONFIG_FILE): return None
-    with open(CONFIG_FILE, "r") as f: return json.load(f)
+    if not os.path.exists(CONFIG_FILE):
+        return None
+    with open(CONFIG_FILE, "r") as f:
+        return json.load(f)
+
 
 def get_credentials():
     creds = None
@@ -44,16 +79,23 @@ def get_credentials():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             from google.auth.transport.requests import Request
+
             creds.refresh(Request())
         else:
             try:
-                flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    CLIENT_SECRET_FILE, SCOPES
+                )
                 creds = flow.run_local_server(port=0)
             except FileNotFoundError:
-                print(f"ERROR: '{CLIENT_SECRET_FILE}' not found. Please run setup.py first.")
+                print(
+                    f"ERROR: '{CLIENT_SECRET_FILE}' not found. Please run setup.py first."
+                )
                 return None
-        with open(TOKEN_FILE, 'w') as token: token.write(creds.to_json())
+        with open(TOKEN_FILE, "w") as token:
+            token.write(creds.to_json())
     return creds
+
 
 def get_sheet(sheet_id, creds):
     try:
@@ -66,6 +108,7 @@ def get_sheet(sheet_id, creds):
         print(f"An unexpected error occurred: {e}")
         return None
 
+
 def get_next_match_id(sheet):
     """Gets the last Match ID from the sheet and increments it."""
     try:
@@ -74,21 +117,22 @@ def get_next_match_id(sheet):
     except (IndexError, ValueError):
         return 1
 
+
 def flatten_json_for_sheet(data, config, match_id):
     """
     Flattens the JSON, generates derived data, and prepares the row for upload.
     """
     date_str = data.get("date", "")
     try:
-        date_obj = datetime.strptime(date_str, '%m/%d/%Y')
+        date_obj = datetime.strptime(date_str, "%m/%d/%Y")
         year = date_obj.year
-        month = date_obj.strftime('%B')
+        month = date_obj.strftime("%B")
     except (ValueError, TypeError):
         date_obj, year, month = None, "", ""
 
     row = [
         match_id,
-        date_obj.strftime('%Y-%m-%d') if date_obj else "",
+        date_obj.strftime("%Y-%m-%d") if date_obj else "",
         config.get("current_season", ""),
         year,
         month,
@@ -103,7 +147,9 @@ def flatten_json_for_sheet(data, config, match_id):
     ]
 
     player_map = {p["player_name"]: p for p in data.get("team1", {}).get("players", [])}
-    player_map.update({p["player_name"]: p for p in data.get("team2", {}).get("players", [])})
+    player_map.update(
+        {p["player_name"]: p for p in data.get("team2", {}).get("players", [])}
+    )
 
     for player_name in config["known_players"]:
         player_info = player_map.get(player_name)
@@ -137,7 +183,7 @@ def upload_to_sheet(data):
 
     next_id = get_next_match_id(sheet)
     new_row = flatten_json_for_sheet(data, config, next_id)
-    
+
     print(f"  - Appending new game data (Match ID: {next_id}): {new_row}")
     try:
         sheet.append_row(new_row)
