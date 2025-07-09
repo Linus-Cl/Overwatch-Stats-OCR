@@ -1,5 +1,5 @@
 gspread
-
+PyQt6
 # Used to load environment variables from a .env file
 python-dotenv
 google-auth-oauthlib

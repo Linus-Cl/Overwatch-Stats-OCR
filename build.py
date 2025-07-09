@@ -1,6 +1,7 @@
 import PyInstaller.__main__
 import os
 import sys
+import PyQt6
 
 # -----------------------------------------------------------------------------
 # --- CONFIGURATION ---
@@ -14,9 +15,6 @@ MAIN_SCRIPT = "run.py"
 
 # List of data files and directories to include.
 # Format: "path/on/disk:path/in/executable"
-# Use os.pathsep to separate multiple entries on the same line.
-# IMPORTANT: This build script assumes that you have already run `setup.py`
-# at least once to generate `config.json` and `token.json`.
 DATA_TO_INCLUDE = [
     # All hero, map, and name templates
     f"data_extraction/templates{os.pathsep}data_extraction/templates",
@@ -24,10 +22,13 @@ DATA_TO_INCLUDE = [
     f"google_sheets_integration/client_secret.json{os.pathsep}google_sheets_integration",
     # The entire web app directory
     f"web_app{os.pathsep}web_app",
-    # The generated config and token files
-    f"{os.path.abspath('config.json')}{os.pathsep}.",
-    f"{os.path.abspath('token.json')}{os.pathsep}.",
 ]
+
+# --- PyInstaller Configuration ---
+
+# Find the path to the Qt plugins directory using the PyQt6 package location
+pyqt_path = os.path.dirname(PyQt6.__file__)
+plugins_path = os.path.join(pyqt_path, "Qt6", "plugins")
 
 # PyInstaller options
 # For a full list of options, see the PyInstaller documentation
@@ -35,6 +36,15 @@ PYINSTALLER_OPTIONS = [
     "--noconfirm",  # Don't ask for confirmation before overwriting
     "--onedir",     # Create a directory bundle (best for debugging)
     "--windowed",   # Use a windowed app bundle for macOS (no console)
+    
+    # --- CRITICAL for PyQt6 ---
+    # This line ensures that the necessary Qt platform plugins are included.
+    f"--add-data={os.path.join(plugins_path, 'platforms')}{os.pathsep}PyQt6/Qt6/plugins/platforms",
+    f"--add-data={os.path.join(plugins_path, 'styles')}{os.pathsep}PyQt6/Qt6/plugins/styles",
+    
+    # --- Exclude conflicting libraries ---
+    "--exclude-module=PyQt5",
+
     # Add any other required hidden imports if PyInstaller fails to find them
     '--hidden-import=pynput.keyboard._darwin',
     '--hidden-import=pynput.mouse._darwin',
@@ -49,18 +59,7 @@ PYINSTALLER_OPTIONS = [
 def build():
     """
     Runs the PyInstaller build process.
-    
-    This script should be run AFTER `setup.py` has been completed,
-    as it requires `config.json` and `token.json` to be present.
     """
-    # Pre-build checks
-    if not os.path.exists('config.json') or not os.path.exists('token.json'):
-        print("--- BUILD PRE-CHECK FAILED ---")
-        print("Error: 'config.json' or 'token.json' not found.")
-        print("Please run 'python setup.py' to generate these files before building.")
-        print("------------------------------")
-        sys.exit(1)
-
     command = [
         MAIN_SCRIPT,
         f"--name={EXE_NAME}",
@@ -88,6 +87,8 @@ def build():
         exe_path = os.path.join('dist', EXE_NAME)
         if sys.platform == 'win32':
             exe_path += '.exe'
+        elif sys.platform == 'darwin':
+            exe_path += '.app'
         print(f"Executable created at: {exe_path}")
         print("-------------------------")
     except Exception as e:

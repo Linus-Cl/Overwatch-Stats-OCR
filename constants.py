@@ -31,5 +31,7 @@ SCREENSHOT_DIR = os.path.join(os.path.expanduser("~"), "OverwatchStatsOCR_Screen
 SCREENSHOT_PATH = os.path.join(SCREENSHOT_DIR, "screenshot.png")
 
 # --- APPLICATION CONFIG FILES ---
-CONFIG_FILE = resource_path("config.json")
-TOKEN_FILE = resource_path("token.json")
+# We store user-generated config in the user's home directory.
+USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "OverwatchStatsOCR_Data")
+CONFIG_FILE = os.path.join(USER_DATA_DIR, "config.json")
+TOKEN_FILE = os.path.join(USER_DATA_DIR, "token.json")

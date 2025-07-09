@@ -14,6 +14,9 @@ import constants
 from data_extraction.main_ocr import analyze_scoreboard
 from google_sheets_integration.uploader import upload_to_sheet
 
+import json
+
+
 # --- Setup Logging ---
 # Create a logs directory in the user's home folder
 log_dir = os.path.join(os.path.expanduser("~"), "OverwatchStatsOCR_Logs")
@@ -36,6 +39,18 @@ root_logger.setLevel(logging.INFO)
 keyboard_listener = None
 is_listener_running = False
 web_app_process = None
+
+def on_setup_complete(config_data):
+    """Callback function to save config and then relaunch the application."""
+    # The config is saved by the setup GUI now, so this function just needs to relaunch.
+    logging.info("Setup complete. Relaunching application...")
+    
+    # Relaunch the application in a new, clean process
+    # This completely separates the setup environment from the main app environment.
+    subprocess.Popen([sys.executable, __file__])
+    
+    # Exit the current (setup) process
+    sys.exit(0)
 
 
 def create_default_icon():
@@ -145,7 +160,12 @@ def on_exit(icon, item):
 
 def main():
     logging.info("--- Overwatch Stats OCR ---")
-    start_listener()
+
+    # The pystray documentation recommends starting listeners
+    # in a setup function passed to run(). This avoids race conditions on macOS.
+    def post_setup(icon):
+        icon.visible = True
+        start_listener()
 
     # Setup the system tray icon
     tray_icon = icon(
@@ -159,16 +179,38 @@ def main():
         )
     )
     logging.info("Application started. System tray icon is now active.")
-    tray_icon.run()
+    tray_icon.run(setup=post_setup)
 
 
 if __name__ == "__main__":
+    # --- Fix for Qt Platform Plugin Error ---
+    # In complex environments like Anaconda, we must explicitly tell Qt where its
+    # plugins are. We do this by finding the PyQt6 package path directly.
+    try:
+        import PyQt6
+        import os
+        
+        # Get the path to the PyQt6 package
+        pyqt_path = os.path.dirname(PyQt6.__file__)
+        # Construct the full path to the Qt plugins directory
+        plugins_path = os.path.join(pyqt_path, "Qt6", "plugins")
+        
+        # Set the environment variable. This is the most reliable method for development.
+        os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugins_path
+        
+        logging.info(f"Forcing Qt plugin path to: {plugins_path}")
+
+    except Exception as e:
+        logging.warning(f"Could not set Qt plugin path: {e}")
+    # --- End of Fix ---
+
     try:
         # Check if config exists before starting
         if not os.path.exists(constants.CONFIG_FILE):
-            logging.error(
-                f"FATAL: {constants.CONFIG_FILE} not found. Please run setup.py first."
-            )
+            logging.info("Configuration not found. Launching first-time setup GUI.")
+            # We import here, after the path has been set.
+            from setup_gui import run_setup_flow
+            run_setup_flow(on_setup_complete)
         else:
             main()
     except Exception as e:
