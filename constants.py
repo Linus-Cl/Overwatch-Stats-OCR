@@ -17,7 +17,7 @@ def resource_path(relative_path):
 # If tesseract is not in your PATH, include the full path to the Tesseract executable.
 # Example for Windows: r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 # Example for macOS (if installed with Homebrew): '/opt/homebrew/bin/tesseract'
-TESSERACT_CMD_PATH = None # Set to None to use system PATH
+TESSERACT_CMD_PATH = None  # Set to None to use system PATH
 
 
 # --- AUTOMATION CONFIG ---
@@ -26,4 +26,10 @@ TESSERACT_CMD_PATH = None # Set to None to use system PATH
 HOTKEY = "f6"
 
 # The path where the screenshot will be saved
-SCREENSHOT_PATH = "screenshots/screenshot.png"
+# We save it in the user's home directory to avoid permission issues.
+SCREENSHOT_DIR = os.path.join(os.path.expanduser("~"), "OverwatchStatsOCR_Screenshots")
+SCREENSHOT_PATH = os.path.join(SCREENSHOT_DIR, "screenshot.png")
+
+# --- APPLICATION CONFIG FILES ---
+CONFIG_FILE = resource_path("config.json")
+TOKEN_FILE = resource_path("token.json")

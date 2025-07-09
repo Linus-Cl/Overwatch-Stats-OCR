@@ -15,3 +15,5 @@ pytesseract
 thefuzz
 python-Levenshtein
 PyInstaller
+pystray
+Pillow
