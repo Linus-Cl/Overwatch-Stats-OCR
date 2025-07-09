@@ -5,14 +5,13 @@ import json
 import os
 import pandas as pd
 from datetime import datetime
+import logging
 
-from constants import resource_path
+from constants import resource_path, CONFIG_FILE, TOKEN_FILE
 
 # --- CONFIGURATION ---
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 CLIENT_SECRET_FILE = resource_path("google_sheets_integration/client_secret.json")
-TOKEN_FILE = "token.json"
-CONFIG_FILE = "config.json"
 
 # --- HERO TO ROLE MAPPING ---
 HERO_ROLES = {
@@ -67,6 +66,7 @@ HERO_ROLES = {
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
+        logging.error(f"'{CONFIG_FILE}' not found. Cannot proceed with sheet upload.")
         return None
     with open(CONFIG_FILE, "r") as f:
         return json.load(f)
@@ -80,6 +80,7 @@ def get_credentials():
         if creds and creds.expired and creds.refresh_token:
             from google.auth.transport.requests import Request
 
+            logging.info("Refreshing expired Google credentials.")
             creds.refresh(Request())
         else:
             try:
@@ -88,12 +89,19 @@ def get_credentials():
                 )
                 creds = flow.run_local_server(port=0)
             except FileNotFoundError:
-                print(
-                    f"ERROR: '{CLIENT_SECRET_FILE}' not found. Please run setup.py first."
+                logging.error(
+                    f"'{CLIENT_SECRET_FILE}' not found. Please run setup.py first."
+                )
+                return None
+            except Exception as e:
+                logging.error(
+                    f"An error occurred during Google authentication flow.",
+                    exc_info=True,
                 )
                 return None
         with open(TOKEN_FILE, "w") as token:
             token.write(creds.to_json())
+            logging.info(f"New credentials saved to '{TOKEN_FILE}'.")
     return creds
 
 
@@ -102,10 +110,12 @@ def get_sheet(sheet_id, creds):
         client = gspread.authorize(creds)
         return client.open_by_key(sheet_id).sheet1
     except gspread.exceptions.SpreadsheetNotFound:
-        print(f"ERROR: Google Sheet with ID '{sheet_id}' not found.")
+        logging.error(f"Google Sheet with ID '{sheet_id}' not found.")
         return None
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        logging.error(
+            f"An unexpected error occurred while accessing Google Sheet.", exc_info=True
+        )
         return None
 
 
@@ -115,6 +125,7 @@ def get_next_match_id(sheet):
         last_id = sheet.col_values(1)[-1]
         return int(last_id) + 1 if last_id.isdigit() else 1
     except (IndexError, ValueError):
+        logging.info("Match ID column is empty or invalid, starting from 1.")
         return 1
 
 
@@ -165,28 +176,31 @@ def flatten_json_for_sheet(data, config, match_id):
 
 def upload_to_sheet(data):
     """Main function to upload a single game's data to the Google Sheet."""
-    print("--- GOOGLE SHEETS UPLOAD ---")
+    logging.info("--- GOOGLE SHEETS UPLOAD ---")
     config = load_config()
     if not config:
-        print("└──> Upload failed: config.json not found. Please run setup.py first.")
+        logging.error("Upload failed: config.json not found.")
         return
 
     creds = get_credentials()
     if not creds:
-        print("└──> Upload failed: Could not get Google credentials.")
+        logging.error("Upload failed: Could not get Google credentials.")
         return
 
     sheet = get_sheet(config["sheet_id"], creds)
     if not sheet:
-        print("└──> Upload failed: Could not access the worksheet.")
+        logging.error("Upload failed: Could not access the worksheet.")
         return
 
     next_id = get_next_match_id(sheet)
     new_row = flatten_json_for_sheet(data, config, next_id)
 
-    print(f"  - Appending new game data (Match ID: {next_id}): {new_row}")
+    logging.info(f"Appending new game data (Match ID: {next_id})")
+    logging.debug(f"Row data: {new_row}")
     try:
         sheet.append_row(new_row)
-        print("└──> Successfully uploaded data to Google Sheets.")
+        logging.info("Successfully uploaded data to Google Sheets.")
     except Exception as e:
-        print(f"└──> Upload failed: An error occurred while appending the row: {e}")
+        logging.error(
+            "Upload failed: An error occurred while appending the row.", exc_info=True
+        )
