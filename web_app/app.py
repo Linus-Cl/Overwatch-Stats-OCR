@@ -19,7 +19,9 @@ app = Dash(
 server = app.server
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 df = pd.DataFrame()
-CONFIG_FILE = os.path.join(APP_DIR, "..", "config.json")
+CONFIG_FILE = os.path.join(
+    os.path.expanduser("~"), "OverwatchStatsOCR_Data", "config.json"
+)
 
 
 # --- Data Loading ---
@@ -37,7 +39,9 @@ def load_data(use_local=True):
     global df, config
     local_excel_path = os.path.join(APP_DIR, "local.xlsx")
     if config is None:
-        logging.error("config.json not found. Please run setup.py in the root directory.")
+        logging.error(
+            "config.json not found. Please run setup.py in the root directory."
+        )
         df = pd.DataFrame()
         return
 
@@ -162,8 +166,13 @@ app.layout = dbc.Container(
                                             step=None,
                                             value=5,
                                             marks={
-                                                1: "1", 5: "5", 10: "10", 25: "25",
-                                                50: "50", 75: "75", 100: "100",
+                                                1: "1",
+                                                5: "5",
+                                                10: "10",
+                                                25: "25",
+                                                50: "50",
+                                                75: "75",
+                                                100: "100",
                                             },
                                             included=False,
                                             className="mb-1",
@@ -203,12 +212,27 @@ app.layout = dbc.Container(
                                                         id="map-stat-type",
                                                         value="winrate",
                                                         clearable=False,
-                                                        style={"width": "100%", "marginBottom": "20px"},
+                                                        style={
+                                                            "width": "100%",
+                                                            "marginBottom": "20px",
+                                                        },
                                                         options=[
-                                                            {"label": "Winrate by Map", "value": "winrate"},
-                                                            {"label": "Games per Map", "value": "plays"},
-                                                            {"label": "Gamemode Stats", "value": "gamemode"},
-                                                            {"label": "Attack/Defense Stats", "value": "attackdef"},
+                                                            {
+                                                                "label": "Winrate by Map",
+                                                                "value": "winrate",
+                                                            },
+                                                            {
+                                                                "label": "Games per Map",
+                                                                "value": "plays",
+                                                            },
+                                                            {
+                                                                "label": "Gamemode Stats",
+                                                                "value": "gamemode",
+                                                            },
+                                                            {
+                                                                "label": "Attack/Defense Stats",
+                                                                "value": "attackdef",
+                                                            },
                                                         ],
                                                     ),
                                                     width=4,
@@ -240,10 +264,19 @@ app.layout = dbc.Container(
                                             id="hero-stat-type",
                                             value="winrate",
                                             clearable=False,
-                                            style={"width": "300px", "marginBottom": "20px"},
+                                            style={
+                                                "width": "300px",
+                                                "marginBottom": "20px",
+                                            },
                                             options=[
-                                                {"label": "Winrate by Hero", "value": "winrate"},
-                                                {"label": "Games per Hero", "value": "plays"},
+                                                {
+                                                    "label": "Winrate by Hero",
+                                                    "value": "winrate",
+                                                },
+                                                {
+                                                    "label": "Games per Hero",
+                                                    "value": "plays",
+                                                },
                                             ],
                                         ),
                                         dcc.Graph(id="hero-stat-graph"),
@@ -257,10 +290,19 @@ app.layout = dbc.Container(
                                             id="role-stat-type",
                                             value="winrate",
                                             clearable=False,
-                                            style={"width": "300px", "marginBottom": "20px"},
+                                            style={
+                                                "width": "300px",
+                                                "marginBottom": "20px",
+                                            },
                                             options=[
-                                                {"label": "Winrate by Role", "value": "winrate"},
-                                                {"label": "Games per Role", "value": "plays"},
+                                                {
+                                                    "label": "Winrate by Role",
+                                                    "value": "winrate",
+                                                },
+                                                {
+                                                    "label": "Games per Role",
+                                                    "value": "plays",
+                                                },
                                             ],
                                         ),
                                         dcc.Graph(id="role-stat-graph"),
@@ -295,9 +337,18 @@ app.layout = dbc.Container(
                                                     dcc.Dropdown(
                                                         id="history-load-amount-dropdown",
                                                         options=[
-                                                            {"label": "Load 10 more", "value": 10},
-                                                            {"label": "Load 25 more", "value": 25},
-                                                            {"label": "Load 50 more", "value": 50},
+                                                            {
+                                                                "label": "Load 10 more",
+                                                                "value": 10,
+                                                            },
+                                                            {
+                                                                "label": "Load 25 more",
+                                                                "value": 25,
+                                                            },
+                                                            {
+                                                                "label": "Load 50 more",
+                                                                "value": 50,
+                                                            },
                                                         ],
                                                         value=10,
                                                         clearable=False,
@@ -318,7 +369,10 @@ app.layout = dbc.Container(
                                         ),
                                         html.Div(
                                             id="history-list-container",
-                                            style={"maxHeight": "1000px", "overflowY": "auto"},
+                                            style={
+                                                "maxHeight": "1000px",
+                                                "overflowY": "auto",
+                                            },
                                         ),
                                     ],
                                 ),
@@ -358,7 +412,9 @@ def get_map_image_url(map_name):
     cleaned_name = map_name.lower().replace(" ", "_").replace("'", "")
     for ext in [".jpg", ".png"]:
         asset_path = f"/assets/maps/{cleaned_name}{ext}"
-        if os.path.exists(os.path.join(APP_DIR, "assets", "maps", f"{cleaned_name}{ext}")):
+        if os.path.exists(
+            os.path.join(APP_DIR, "assets", "maps", f"{cleaned_name}{ext}")
+        ):
             return asset_path
     return f"{APP_DIR}/assets/maps/default.png"
 
@@ -370,8 +426,14 @@ def get_hero_image_url(hero_name):
     potential_names = list(
         set(
             [
-                base_name.replace(".", "").replace(":", "").replace("ú", "u").replace(" ", "_"),
-                base_name.replace(".", "").replace(":", "").replace("ú", "u").replace(" ", ""),
+                base_name.replace(".", "")
+                .replace(":", "")
+                .replace("ú", "u")
+                .replace(" ", "_"),
+                base_name.replace(".", "")
+                .replace(":", "")
+                .replace("ú", "u")
+                .replace(" ", ""),
                 re.sub(r"[^a-z0-9]", "", base_name),
             ]
         )
@@ -381,7 +443,9 @@ def get_hero_image_url(hero_name):
             continue
         for ext in [".png", ".jpg", ".jpeg"]:
             asset_path = f"/assets/heroes/{name}{ext}"
-            if os.path.exists(os.path.join(APP_DIR, "assets", "heroes", f"{name}{ext}")):
+            if os.path.exists(
+                os.path.join(APP_DIR, "assets", "heroes", f"{name}{ext}")
+            ):
                 return asset_path
     return f"{APP_DIR}/assets/heroes/default_hero.png"
 
@@ -390,7 +454,7 @@ def filter_data(player, season=None, month=None, year=None):
     global df
     if df.empty:
         return pd.DataFrame()
-    temp = df[df["Result"].isin(["VICTORY", "DEFEAT", "DRAW"])].copy() # Include DRAW
+    temp = df[df["Result"].isin(["VICTORY", "DEFEAT", "DRAW"])].copy()  # Include DRAW
     if season:
         temp = temp[temp["Season"] == season]
     else:
@@ -410,17 +474,24 @@ def filter_data(player, season=None, month=None, year=None):
 
 def calculate_winrate(data, group_col):
     if data.empty or group_col not in data.columns:
-        return pd.DataFrame(columns=[group_col, "Win", "Lose", "Draw", "Winrate", "Games"])
+        return pd.DataFrame(
+            columns=[group_col, "Win", "Lose", "Draw", "Winrate", "Games"]
+        )
     data[group_col] = data[group_col].astype(str).str.strip()
     data = data[data[group_col].notna() & (data[group_col] != "")]
     if data.empty:
-        return pd.DataFrame(columns=[group_col, "Win", "Lose", "Draw", "Winrate", "Games"])
-    
+        return pd.DataFrame(
+            columns=[group_col, "Win", "Lose", "Draw", "Winrate", "Games"]
+        )
+
     grouped = data.groupby([group_col, "Result"]).size().unstack(fill_value=0)
-    if "VICTORY" not in grouped: grouped["VICTORY"] = 0
-    if "DEFEAT" not in grouped: grouped["DEFEAT"] = 0
-    if "DRAW" not in grouped: grouped["DRAW"] = 0
-        
+    if "VICTORY" not in grouped:
+        grouped["VICTORY"] = 0
+    if "DEFEAT" not in grouped:
+        grouped["DEFEAT"] = 0
+    if "DRAW" not in grouped:
+        grouped["DRAW"] = 0
+
     grouped["Games"] = grouped["VICTORY"] + grouped["DEFEAT"] + grouped["DRAW"]
     # Winrate calculation can be defined in multiple ways, e.g., Wins / (Total - Draws)
     # Here we use a simple Wins / Total Games for consistency.
@@ -429,7 +500,11 @@ def calculate_winrate(data, group_col):
 
 
 def generate_summary_table(players_data, min_games):
-    header = [html.Thead(html.Tr([html.Th("Statistic")] + [html.Th(p) for p in players_data.keys()]))]
+    header = [
+        html.Thead(
+            html.Tr([html.Th("Statistic")] + [html.Th(p) for p in players_data.keys()])
+        )
+    ]
     rows = []
     total_games_row, winrate_row = [html.Td("Total Games")], [html.Td("Winrate")]
     for player, data in players_data.items():
@@ -465,14 +540,18 @@ def generate_summary_table(players_data, min_games):
                 hero_wr = calculate_winrate(data, "Hero")
                 hero_wr_filtered = hero_wr[hero_wr["Games"] >= min_games]
                 best_hero = hero_wr_filtered.loc[hero_wr_filtered["Winrate"].idxmax()]
-                best_wr_hero_row.append(html.Td(f"{best_hero['Hero']} ({best_hero['Winrate']:.0%})"))
+                best_wr_hero_row.append(
+                    html.Td(f"{best_hero['Hero']} ({best_hero['Winrate']:.0%})")
+                )
             except (KeyError, IndexError, ValueError):
                 best_wr_hero_row.append(html.Td("N/A"))
         else:
             best_wr_hero_row.append(html.Td("N/A"))
     rows.append(html.Tr(best_wr_hero_row))
 
-    return dbc.Table(header + [html.Tbody(rows)], bordered=True, striped=True, hover=True)
+    return dbc.Table(
+        header + [html.Tbody(rows)], bordered=True, striped=True, hover=True
+    )
 
 
 def generate_history_layout_simple(games_df):
@@ -481,20 +560,32 @@ def generate_history_layout_simple(games_df):
     history_items = []
     last_season = None
     for idx, game in games_df.iterrows():
-        if pd.isna(game.get("Map")): continue
+        if pd.isna(game.get("Map")):
+            continue
         current_season = game.get("Season")
         if pd.notna(current_season) and current_season != last_season:
-            history_items.append(dbc.Alert(f"Season {current_season}", color="secondary", className="my-4 text-center fw-bold"))
+            history_items.append(
+                dbc.Alert(
+                    f"Season {current_season}",
+                    color="secondary",
+                    className="my-4 text-center fw-bold",
+                )
+            )
             last_season = current_season
-        
+
         map_name, gamemode = game.get("Map", "Unknown"), game.get("Gamemode", "")
         map_image_url = get_map_image_url(map_name)
-        date_str = game["Date"].strftime("%Y-%m-%d") if pd.notna(game.get("Date")) else "N/A"
-        
+        date_str = (
+            game["Date"].strftime("%Y-%m-%d") if pd.notna(game.get("Date")) else "N/A"
+        )
+
         result = game.get("Result")
-        if result == "VICTORY": result_color, result_text = "success", "VICTORY"
-        elif result == "DEFEAT": result_color, result_text = "danger", "DEFEAT"
-        else: result_color, result_text = "warning", "DRAW"
+        if result == "VICTORY":
+            result_color, result_text = "success", "VICTORY"
+        elif result == "DEFEAT":
+            result_color, result_text = "danger", "DEFEAT"
+        else:
+            result_color, result_text = "warning", "DRAW"
 
         player_list_items = []
         if config and "known_players" in config:
@@ -505,28 +596,88 @@ def generate_history_layout_simple(games_df):
                     hero_image_url = get_hero_image_url(hero)
                     player_list_items.append(
                         dbc.ListGroupItem(
-                            html.Div([
-                                html.Img(src=hero_image_url, style={"width": "40px", "height": "40px", "borderRadius": "50%", "objectFit": "cover", "marginRight": "15px"}),
-                                html.Div([
-                                    html.Div([html.Span(p, className="fw-bold"), html.Span(f" ({role})", className="text-muted", style={"fontSize": "0.9em"})]),
-                                    html.Div(hero),
-                                ], className="d-flex justify-content-between align-items-center w-100"),
-                            ], className="d-flex align-items-center")
+                            html.Div(
+                                [
+                                    html.Img(
+                                        src=hero_image_url,
+                                        style={
+                                            "width": "40px",
+                                            "height": "40px",
+                                            "borderRadius": "50%",
+                                            "objectFit": "cover",
+                                            "marginRight": "15px",
+                                        },
+                                    ),
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [
+                                                    html.Span(p, className="fw-bold"),
+                                                    html.Span(
+                                                        f" ({role})",
+                                                        className="text-muted",
+                                                        style={"fontSize": "0.9em"},
+                                                    ),
+                                                ]
+                                            ),
+                                            html.Div(hero),
+                                        ],
+                                        className="d-flex justify-content-between align-items-center w-100",
+                                    ),
+                                ],
+                                className="d-flex align-items-center",
+                            )
                         )
                     )
-        
+
         history_items.append(
             dbc.Card(
-                dbc.Row([
-                    dbc.Col(html.Img(src=map_image_url, className="img-fluid rounded-start h-100", style={"objectFit": "cover"}), md=3),
-                    dbc.Col([
-                        dbc.CardHeader(html.Div([
-                            html.Div([html.H5(f"{map_name}", className="mb-0"), html.Small(f"{gamemode} • {date_str}", className="text-muted")]),
-                            dbc.Badge(result_text, color=result_color, className="ms-auto", style={"height": "fit-content"}),
-                        ], className="d-flex justify-content-between align-items-center")),
-                        dbc.CardBody(dbc.ListGroup(player_list_items, flush=True), className="p-0"),
-                    ], md=9),
-                ], className="g-0"),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Img(
+                                src=map_image_url,
+                                className="img-fluid rounded-start h-100",
+                                style={"objectFit": "cover"},
+                            ),
+                            md=3,
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.CardHeader(
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [
+                                                    html.H5(
+                                                        f"{map_name}", className="mb-0"
+                                                    ),
+                                                    html.Small(
+                                                        f"{gamemode} • {date_str}",
+                                                        className="text-muted",
+                                                    ),
+                                                ]
+                                            ),
+                                            dbc.Badge(
+                                                result_text,
+                                                color=result_color,
+                                                className="ms-auto",
+                                                style={"height": "fit-content"},
+                                            ),
+                                        ],
+                                        className="d-flex justify-content-between align-items-center",
+                                    )
+                                ),
+                                dbc.CardBody(
+                                    dbc.ListGroup(player_list_items, flush=True),
+                                    className="p-0",
+                                ),
+                            ],
+                            md=9,
+                        ),
+                    ],
+                    className="g-0",
+                ),
                 className="mb-3",
             )
         )
@@ -553,10 +704,29 @@ def update_data(n_clicks):
     Input("dummy-output", "children"),
 )
 def update_filter_options(_):
-    if df.empty: return [], [], []
-    seasons = [{"label": s, "value": s} for s in sorted(df["Season"].dropna().unique(), reverse=True)] if "Season" in df.columns else []
-    months = [{"label": m, "value": m} for m in sorted(df["Month"].dropna().unique())] if "Month" in df.columns else []
-    years = [{"label": str(int(y)), "value": int(y)} for y in sorted(df["Year"].dropna().unique())] if "Year" in df.columns else []
+    if df.empty:
+        return [], [], []
+    seasons = (
+        [
+            {"label": s, "value": s}
+            for s in sorted(df["Season"].dropna().unique(), reverse=True)
+        ]
+        if "Season" in df.columns
+        else []
+    )
+    months = (
+        [{"label": m, "value": m} for m in sorted(df["Month"].dropna().unique())]
+        if "Month" in df.columns
+        else []
+    )
+    years = (
+        [
+            {"label": str(int(y)), "value": int(y)}
+            for y in sorted(df["Year"].dropna().unique())
+        ]
+        if "Year" in df.columns
+        else []
+    )
     return seasons, months, years
 
 
@@ -566,8 +736,13 @@ def update_filter_options(_):
     Input("player-dropdown", "value"),
 )
 def update_compare_options(selected_player):
-    if not config or not selected_player: return [], []
-    options = [{"label": p, "value": p} for p in config["known_players"] if p != selected_player]
+    if not config or not selected_player:
+        return [], []
+    options = [
+        {"label": p, "value": p}
+        for p in config["known_players"]
+        if p != selected_player
+    ]
     return options, []
 
 
@@ -575,18 +750,29 @@ def update_compare_options(selected_player):
     Output("map-view-type-container", "style"), Input("map-stat-type", "value")
 )
 def toggle_view_type_visibility(map_stat_type):
-    return {"display": "block"} if map_stat_type in ["winrate", "plays"] else {"display": "none"}
+    return (
+        {"display": "block"}
+        if map_stat_type in ["winrate", "plays"]
+        else {"display": "none"}
+    )
 
 
 @app.callback(
     Output("min-games-slider", "disabled"),
     Output("slider-hint", "children"),
-    [Input("tabs", "active_tab"), Input("hero-stat-type", "value"), Input("role-stat-type", "value"), Input("map-stat-type", "value")],
+    [
+        Input("tabs", "active_tab"),
+        Input("hero-stat-type", "value"),
+        Input("role-stat-type", "value"),
+        Input("map-stat-type", "value"),
+    ],
 )
 def toggle_slider(tab, hero_stat, role_stat, map_stat):
-    if (tab == "tab-hero" and hero_stat == "winrate") or \
-       (tab == "tab-role" and role_stat == "winrate") or \
-       (tab == "tab-map" and map_stat in ["winrate", "gamemode", "attackdef"]):
+    if (
+        (tab == "tab-hero" and hero_stat == "winrate")
+        or (tab == "tab-role" and role_stat == "winrate")
+        or (tab == "tab-map" and map_stat in ["winrate", "gamemode", "attackdef"])
+    ):
         return False, ""
     return True, "Only relevant for winrate statistics"
 
@@ -595,37 +781,76 @@ def toggle_slider(tab, hero_stat, role_stat, map_stat):
     Output("history-list-container", "children"),
     Output("history-display-count-store", "data"),
     [Input("load-more-history-button", "n_clicks"), Input("dummy-output", "children")],
-    [State("history-display-count-store", "data"), State("history-load-amount-dropdown", "value")],
+    [
+        State("history-display-count-store", "data"),
+        State("history-load-amount-dropdown", "value"),
+    ],
 )
 def update_history_display(n_clicks, _, current_store, load_amount):
     global df
     if df.empty:
         return [dbc.Alert("No match history available.", color="danger")], {"count": 10}
-    new_count = (current_store.get("count", 10) + load_amount) if ctx.triggered_id == "load-more-history-button" else 10
+    new_count = (
+        (current_store.get("count", 10) + load_amount)
+        if ctx.triggered_id == "load-more-history-button"
+        else 10
+    )
     games_to_show = df.head(new_count)
     return generate_history_layout_simple(games_to_show), {"count": new_count}
 
 
 @app.callback(
     [
-        Output("map-stat-container", "children"), Output("hero-stat-graph", "figure"),
-        Output("role-stat-graph", "figure"), Output("performance-heatmap", "figure"),
-        Output("stats-header", "children"), Output("stats-container", "children"),
-        Output("winrate-over-time", "figure"), Output("hero-filter-dropdown", "options"),
+        Output("map-stat-container", "children"),
+        Output("hero-stat-graph", "figure"),
+        Output("role-stat-graph", "figure"),
+        Output("performance-heatmap", "figure"),
+        Output("stats-header", "children"),
+        Output("stats-container", "children"),
+        Output("winrate-over-time", "figure"),
+        Output("hero-filter-dropdown", "options"),
     ],
     [
-        Input("player-dropdown", "value"), Input("min-games-slider", "value"),
-        Input("season-dropdown", "value"), Input("month-dropdown", "value"), Input("year-dropdown", "value"),
-        Input("hero-filter-dropdown", "value"), Input("hero-stat-type", "value"),
-        Input("role-stat-type", "value"), Input("map-stat-type", "value"),
-        Input("map-view-type", "value"), Input("compare-dropdown", "value"),
+        Input("player-dropdown", "value"),
+        Input("min-games-slider", "value"),
+        Input("season-dropdown", "value"),
+        Input("month-dropdown", "value"),
+        Input("year-dropdown", "value"),
+        Input("hero-filter-dropdown", "value"),
+        Input("hero-stat-type", "value"),
+        Input("role-stat-type", "value"),
+        Input("map-stat-type", "value"),
+        Input("map-view-type", "value"),
+        Input("compare-dropdown", "value"),
     ],
     [Input("dummy-output", "children")],
 )
-def update_all_graphs(player, min_games, season, month, year, hero_filter, hero_stat_type, role_stat_type, map_stat_type, map_view_type, compare_players, _):
+def update_all_graphs(
+    player,
+    min_games,
+    season,
+    month,
+    year,
+    hero_filter,
+    hero_stat_type,
+    role_stat_type,
+    map_stat_type,
+    map_view_type,
+    compare_players,
+    _,
+):
     if not player:
         empty_fig = go.Figure(layout={"title": "Please select a player"})
-        return [html.Div()], empty_fig, empty_fig, empty_fig, "Statistics", html.Div("Please select a player."), empty_fig, []
+        return (
+            [html.Div()],
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            "Statistics",
+            html.Div("Please select a player."),
+            empty_fig,
+            [],
+        )
 
     if compare_players and len(compare_players) > 2:
         compare_players = compare_players[:2]
@@ -633,54 +858,114 @@ def update_all_graphs(player, min_games, season, month, year, hero_filter, hero_
     all_players_to_load = [player] + (compare_players if compare_players else [])
     dataframes = {p: filter_data(p, season, month, year) for p in all_players_to_load}
     main_df = dataframes[player]
-    
-    title_suffix = f"({player}{' vs ' + ', '.join(compare_players) if compare_players else ''})"
+
+    title_suffix = (
+        f"({player}{' vs ' + ', '.join(compare_players) if compare_players else ''})"
+    )
     empty_fig = go.Figure(layout={"title": "No data available for this selection"})
     stats_header = f"Overall Statistics"
-    
-    all_player_data = {p: filter_data(p, season, month, year) for p in config["known_players"]} if config else {}
+
+    all_player_data = (
+        {p: filter_data(p, season, month, year) for p in config["known_players"]}
+        if config
+        else {}
+    )
     stats_container = generate_summary_table(all_player_data, min_games)
 
     map_stat_output, bar_fig = None, go.Figure()
     attack_def_modes = ["Attack", "Defense", "Symmetric"]
     if map_view_type and not compare_players and map_stat_type in ["winrate", "plays"]:
-        pass # Detailed map view logic would go here
+        pass  # Detailed map view logic would go here
     else:
-        group_col = {"winrate": "Map", "plays": "Map", "gamemode": "Gamemode", "attackdef": "Team 1 Side"}.get(map_stat_type)
-        y_col = "Winrate" if map_stat_type in ["winrate", "gamemode", "attackdef"] else "Games"
+        group_col = {
+            "winrate": "Map",
+            "plays": "Map",
+            "gamemode": "Gamemode",
+            "attackdef": "Team 1 Side",
+        }.get(map_stat_type)
+        y_col = (
+            "Winrate"
+            if map_stat_type in ["winrate", "gamemode", "attackdef"]
+            else "Games"
+        )
         for name, df_to_plot in dataframes.items():
             if not df_to_plot.empty and group_col and group_col in df_to_plot.columns:
                 if y_col == "Winrate":
                     stats = calculate_winrate(df_to_plot, group_col)
                     stats = stats[stats["Games"] >= min_games]
                     if not stats.empty:
-                        bar_fig.add_trace(go.Bar(x=stats[group_col], y=stats[y_col], name=name, customdata=stats[["Games"]], hovertemplate="<b>%{x}</b><br>Winrate: %{y:.1%}<br>Games: %{customdata[0]}<extra></extra>"))
+                        bar_fig.add_trace(
+                            go.Bar(
+                                x=stats[group_col],
+                                y=stats[y_col],
+                                name=name,
+                                customdata=stats[["Games"]],
+                                hovertemplate="<b>%{x}</b><br>Winrate: %{y:.1%}<br>Games: %{customdata[0]}<extra></extra>",
+                            )
+                        )
                 else:
-                    stats = df_to_plot.groupby(group_col).size().reset_index(name="Games").sort_values("Games", ascending=False)
+                    stats = (
+                        df_to_plot.groupby(group_col)
+                        .size()
+                        .reset_index(name="Games")
+                        .sort_values("Games", ascending=False)
+                    )
                     if not stats.empty:
-                        bar_fig.add_trace(go.Bar(x=stats[group_col], y=stats[y_col], name=name, hovertemplate="<b>%{x}</b><br>Games: %{y}<extra></extra>"))
-        bar_fig.update_layout(title=f"{map_stat_type.title().replace('def', 'Def')} by {group_col} {title_suffix}", barmode="group", yaxis_title=y_col, legend_title="Player")
-        if y_col == "Winrate": bar_fig.update_layout(yaxis_tickformat=".0%")
-        if not bar_fig.data: bar_fig = empty_fig
+                        bar_fig.add_trace(
+                            go.Bar(
+                                x=stats[group_col],
+                                y=stats[y_col],
+                                name=name,
+                                hovertemplate="<b>%{x}</b><br>Games: %{y}<extra></extra>",
+                            )
+                        )
+        bar_fig.update_layout(
+            title=f"{map_stat_type.title().replace('def', 'Def')} by {group_col} {title_suffix}",
+            barmode="group",
+            yaxis_title=y_col,
+            legend_title="Player",
+        )
+        if y_col == "Winrate":
+            bar_fig.update_layout(yaxis_tickformat=".0%")
+        if not bar_fig.data:
+            bar_fig = empty_fig
 
     if map_stat_type == "winrate":
         map_stat_output = dbc.Row(dbc.Col(dcc.Graph(figure=bar_fig), width=12))
     else:
         pie_fig = go.Figure()
-        pie_data_col = "Gamemode" if map_stat_type == "gamemode" else "Team 1 Side" if map_stat_type == "attackdef" else None
+        pie_data_col = (
+            "Gamemode"
+            if map_stat_type == "gamemode"
+            else "Team 1 Side" if map_stat_type == "attackdef" else None
+        )
         if pie_data_col:
             pie_data = main_df.copy()
-            if pie_data_col == "Team 1 Side": pie_data = pie_data[pie_data["Team 1 Side"].isin(attack_def_modes)]
+            if pie_data_col == "Team 1 Side":
+                pie_data = pie_data[pie_data["Team 1 Side"].isin(attack_def_modes)]
             pie_data = pie_data.groupby(pie_data_col).size().reset_index(name="Games")
             if not pie_data.empty:
-                pie_fig = px.pie(pie_data, names=pie_data_col, values="Games", title=f"{pie_data_col} Distribution")
-                pie_fig.update_traces(hovertemplate="<b>%{label}</b><br>Games: %{value}<br>Share: %{percent}<extra></extra>")
-            else: pie_fig = empty_fig
-        
+                pie_fig = px.pie(
+                    pie_data,
+                    names=pie_data_col,
+                    values="Games",
+                    title=f"{pie_data_col} Distribution",
+                )
+                pie_fig.update_traces(
+                    hovertemplate="<b>%{label}</b><br>Games: %{value}<br>Share: %{percent}<extra></extra>"
+                )
+            else:
+                pie_fig = empty_fig
+
         if map_stat_type == "plays":
             map_stat_output = dbc.Row([dbc.Col(dcc.Graph(figure=bar_fig), width=12)])
         else:
-            map_stat_output = dbc.Row([dbc.Col(dcc.Graph(figure=bar_fig), width=7), dbc.Col(dcc.Graph(figure=pie_fig), width=5)])
+            map_stat_output = dbc.Row(
+                [
+                    dbc.Col(dcc.Graph(figure=bar_fig), width=7),
+                    dbc.Col(dcc.Graph(figure=pie_fig), width=5),
+                ]
+            )
 
     def create_comparison_fig(stat_type, group_col):
         fig = go.Figure()
@@ -691,13 +976,39 @@ def update_all_graphs(player, min_games, season, month, year, hero_filter, hero_
                     stats = calculate_winrate(df_to_plot, group_col)
                     stats = stats[stats["Games"] >= min_games]
                     if not stats.empty:
-                        fig.add_trace(go.Bar(x=stats[group_col], y=stats[y_col], name=name, customdata=stats[["Games"]], hovertemplate="<b>%{x}</b><br>Winrate: %{y:.1%}<br>Games: %{customdata[0]}<extra></extra>"))
+                        fig.add_trace(
+                            go.Bar(
+                                x=stats[group_col],
+                                y=stats[y_col],
+                                name=name,
+                                customdata=stats[["Games"]],
+                                hovertemplate="<b>%{x}</b><br>Winrate: %{y:.1%}<br>Games: %{customdata[0]}<extra></extra>",
+                            )
+                        )
                 else:
-                    stats = df_to_plot.groupby(group_col).size().reset_index(name="Games").sort_values("Games", ascending=False)
+                    stats = (
+                        df_to_plot.groupby(group_col)
+                        .size()
+                        .reset_index(name="Games")
+                        .sort_values("Games", ascending=False)
+                    )
                     if not stats.empty:
-                        fig.add_trace(go.Bar(x=stats[group_col], y=stats[y_col], name=name, hovertemplate="<b>%{x}</b><br>Games: %{y}<extra></extra>"))
-        fig.update_layout(title=f"{stat_type.title()} by {group_col} {title_suffix}", barmode="group", yaxis_title=y_col, legend_title="Player")
-        if y_col == "Winrate": fig.update_layout(yaxis_tickformat=".0%")
+                        fig.add_trace(
+                            go.Bar(
+                                x=stats[group_col],
+                                y=stats[y_col],
+                                name=name,
+                                hovertemplate="<b>%{x}</b><br>Games: %{y}<extra></extra>",
+                            )
+                        )
+        fig.update_layout(
+            title=f"{stat_type.title()} by {group_col} {title_suffix}",
+            barmode="group",
+            yaxis_title=y_col,
+            legend_title="Player",
+        )
+        if y_col == "Winrate":
+            fig.update_layout(yaxis_tickformat=".0%")
         return fig if fig.data else empty_fig
 
     hero_fig = create_comparison_fig(hero_stat_type, "Hero")
@@ -705,12 +1016,28 @@ def update_all_graphs(player, min_games, season, month, year, hero_filter, hero_
     heatmap_fig = empty_fig
     if not main_df.empty:
         try:
-            pivot = main_df.pivot_table(index="Role", columns="Map", values="Result", aggfunc=lambda x: (x == "VICTORY").sum() / len(x) if len(x) > 0 else 0)
+            pivot = main_df.pivot_table(
+                index="Role",
+                columns="Map",
+                values="Result",
+                aggfunc=lambda x: (x == "VICTORY").sum() / len(x) if len(x) > 0 else 0,
+            )
             if not pivot.empty:
-                heatmap_fig = px.imshow(pivot, text_auto=".0%", color_continuous_scale="RdYlGn", zmin=0, zmax=1, aspect="auto", title=f"Winrate Heatmap – {player}")
-                heatmap_fig.update_traces(hovertemplate="<b>Map: %{x}</b><br><b>Role: %{y}</b><br><b>Winrate: %{z:.1%}</b><extra></extra>")
-        except Exception: pass
-    
+                heatmap_fig = px.imshow(
+                    pivot,
+                    text_auto=".0%",
+                    color_continuous_scale="RdYlGn",
+                    zmin=0,
+                    zmax=1,
+                    aspect="auto",
+                    title=f"Winrate Heatmap – {player}",
+                )
+                heatmap_fig.update_traces(
+                    hovertemplate="<b>Map: %{x}</b><br><b>Role: %{y}</b><br><b>Winrate: %{z:.1%}</b><extra></extra>"
+                )
+        except Exception:
+            pass
+
     winrate_fig = go.Figure()
     for name, df_plot in dataframes.items():
         if not df_plot.empty and "Date" in df_plot.columns:
@@ -721,27 +1048,70 @@ def update_all_graphs(player, min_games, season, month, year, hero_filter, hero_
             if not time_data.empty:
                 time_data["Win"] = (time_data["Result"] == "VICTORY").astype(int)
                 time_data["GameNum"] = range(1, len(time_data) + 1)
-                time_data["CumulativeWinrate"] = time_data["Win"].cumsum() / time_data["GameNum"]
-                winrate_fig.add_trace(go.Scatter(x=time_data["GameNum"], y=time_data["CumulativeWinrate"], mode="lines", name=name))
-    
-    winrate_fig.update_layout(title=f"Winrate Trend {title_suffix}", yaxis_tickformat=".0%", yaxis_title="Winrate", xaxis_title="Game Number", legend_title="Player")
-    winrate_fig.update_traces(hovertemplate="<b>Game Number: %{x}</b><br><b>Winrate: %{y:.1%}</b><extra></extra>")
-    if not winrate_fig.data: winrate_fig = empty_fig
-    
+                time_data["CumulativeWinrate"] = (
+                    time_data["Win"].cumsum() / time_data["GameNum"]
+                )
+                winrate_fig.add_trace(
+                    go.Scatter(
+                        x=time_data["GameNum"],
+                        y=time_data["CumulativeWinrate"],
+                        mode="lines",
+                        name=name,
+                    )
+                )
+
+    winrate_fig.update_layout(
+        title=f"Winrate Trend {title_suffix}",
+        yaxis_tickformat=".0%",
+        yaxis_title="Winrate",
+        xaxis_title="Game Number",
+        legend_title="Player",
+    )
+    winrate_fig.update_traces(
+        hovertemplate="<b>Game Number: %{x}</b><br><b>Winrate: %{y:.1%}</b><extra></extra>"
+    )
+    if not winrate_fig.data:
+        winrate_fig = empty_fig
+
     hero_options = []
     if not main_df.empty:
         heroes = sorted(main_df["Hero"].dropna().unique())
-        hero_options = [{"label": html.Div([html.Img(src=get_hero_image_url(h), style={"height": "25px", "marginRight": "10px"}), h]), "value": h} for h in heroes]
-        
-    return map_stat_output, hero_fig, role_fig, heatmap_fig, stats_header, stats_container, winrate_fig, hero_options
+        hero_options = [
+            {
+                "label": html.Div(
+                    [
+                        html.Img(
+                            src=get_hero_image_url(h),
+                            style={"height": "25px", "marginRight": "10px"},
+                        ),
+                        h,
+                    ]
+                ),
+                "value": h,
+            }
+            for h in heroes
+        ]
+
+    return (
+        map_stat_output,
+        hero_fig,
+        role_fig,
+        heatmap_fig,
+        stats_header,
+        stats_container,
+        winrate_fig,
+        hero_options,
+    )
 
 
 if __name__ == "__main__":
     if not config:
-        print("FATAL: config.json not found. Please run the setup script in the root directory of the project first.")
+        print(
+            "FATAL: config.json not found. Please run the setup script in the root directory of the project first."
+        )
     else:
         # Note: Dash's default logger can be quite verbose.
         # The logging level for the web server can be configured here if needed.
-        log = logging.getLogger('werkzeug')
+        log = logging.getLogger("werkzeug")
         log.setLevel(logging.WARNING)
         app.run(debug=False)

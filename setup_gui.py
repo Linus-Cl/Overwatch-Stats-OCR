@@ -273,6 +273,25 @@ def run_setup_flow(on_complete_callback):
     wizard.exec() # Use exec() for a modal dialog behavior
 
 if __name__ == '__main__':
+    # --- Fix for Qt Platform Plugin Error ---
+    try:
+        import PyQt6
+        import os
+        
+        # Get the path to the PyQt6 package
+        pyqt_path = os.path.dirname(PyQt6.__file__)
+        # Construct the full path to the Qt plugins directory
+        plugins_path = os.path.join(pyqt_path, "Qt6", "plugins")
+        
+        # Set the environment variable. This is the most reliable method for development.
+        os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = plugins_path
+        
+        logging.info(f"Forcing Qt plugin path to: {plugins_path}")
+
+    except Exception as e:
+        logging.warning(f"Could not set Qt plugin path: {e}")
+    # --- End of Fix ---
+
     logging.basicConfig(level=logging.INFO)
     def on_complete(data):
         print("Setup completed with data:", data)
