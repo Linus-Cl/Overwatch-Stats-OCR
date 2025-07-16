@@ -123,11 +123,16 @@ def is_scoreboard_image(image):
     """
     try:
         # A tight ROI around where 'FINAL SCORE' is expected
-        validator_roi_coords = (1550, 880, 1800, 920)
+        # Adjusted Y-coordinates by -50px based on user feedback.
+        validator_roi_coords = (1550, 850, 1800, 890)
         roi = image[
             validator_roi_coords[1] : validator_roi_coords[3],
             validator_roi_coords[0] : validator_roi_coords[2],
         ]
+        # --- DEBUG: Save the ROI to a file ---
+        cv2.imwrite("debug_validator_roi.png", roi)
+        logging.info("Saved validation ROI to debug_validator_roi.png")
+        # --- END DEBUG ---
         gray_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
         text = pytesseract.image_to_string(gray_roi, config="--psm 7").strip().upper()
         confidence = fuzz.partial_ratio("FINAL SCORE", text)

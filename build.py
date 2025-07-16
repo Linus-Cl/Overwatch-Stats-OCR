@@ -16,6 +16,7 @@ MAIN_SCRIPT = "run.py"
 # List of data files and directories to include.
 # Format: "path/on/disk:path/in/executable"
 DATA_TO_INCLUDE = [
+    
     # All hero, map, and name templates
     f"data_extraction/templates{os.pathsep}data_extraction/templates",
     # The client secret for Google Sheets (if it exists)

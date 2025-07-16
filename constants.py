@@ -17,7 +17,7 @@ def resource_path(relative_path):
 # If tesseract is not in your PATH, include the full path to the Tesseract executable.
 # Example for Windows: r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 # Example for macOS (if installed with Homebrew): '/opt/homebrew/bin/tesseract'
-TESSERACT_CMD_PATH = None  # Set to None to use system PATH
+TESSERACT_CMD_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 # --- AUTOMATION CONFIG ---
