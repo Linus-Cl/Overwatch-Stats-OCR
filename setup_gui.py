@@ -273,6 +273,10 @@ def run_setup_flow(on_complete_callback):
     wizard.exec() # Use exec() for a modal dialog behavior
 
 if __name__ == '__main__':
+    # --- Fix for multiprocessing when bundled in an executable ---
+    multiprocessing.freeze_support()
+    # --- End of Fix ---
+
     # --- Fix for Qt Platform Plugin Error ---
     try:
         import PyQt6

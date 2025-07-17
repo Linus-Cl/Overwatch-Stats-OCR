@@ -35,3 +35,7 @@ SCREENSHOT_PATH = os.path.join(SCREENSHOT_DIR, "screenshot.png")
 USER_DATA_DIR = os.path.join(os.path.expanduser("~"), "OverwatchStatsOCR_Data")
 CONFIG_FILE = os.path.join(USER_DATA_DIR, "config.json")
 TOKEN_FILE = os.path.join(USER_DATA_DIR, "token.json")
+
+# --- DEBUGGING ---
+# Set to True to save a debug image with ROIs drawn on it.
+DEBUG_MODE = True

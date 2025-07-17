@@ -24,13 +24,20 @@ os.makedirs(log_dir, exist_ok=True)
 log_file = os.path.join(log_dir, "app.log")
 
 log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler = logging.FileHandler(log_file, mode='a')
+
+# Use UTF-8 encoding for both file and console to prevent UnicodeEncodeError
+file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
 file_handler.setFormatter(log_formatter)
 file_handler.setLevel(logging.INFO)
-console_handler = logging.StreamHandler()
+
+console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
+
+# Configure the root logger
 root_logger = logging.getLogger()
+# Remove any existing handlers to avoid duplicate logs
+root_logger.handlers.clear()
 root_logger.addHandler(file_handler)
 root_logger.addHandler(console_handler)
 root_logger.setLevel(logging.INFO)
@@ -183,6 +190,12 @@ def main():
 
 
 if __name__ == "__main__":
+    # --- Fix for multiprocessing when bundled in an executable ---
+    # This MUST be the first thing in the __main__ block
+    import multiprocessing
+    multiprocessing.freeze_support()
+    # --- End of Fix ---
+
     # --- Fix for Qt Platform Plugin Error ---
     # In complex environments like Anaconda, we must explicitly tell Qt where its
     # plugins are. We do this by finding the PyQt6 package path directly.
