@@ -1,4 +1,5 @@
 import cv2
+from collections import defaultdict
 import numpy as np
 import os
 import pytesseract
@@ -93,27 +94,75 @@ def find_known_players_in_roi(roi, name_templates, threshold):
     return found_players
 
 
-def find_best_map_match(map_roi, map_templates, threshold):
-    best_match_score, best_match_name = -1, "Unknown"
-    logging.info("--- MAP DETECTION ---")
-    for name, template in map_templates.items():
-        if template is None:
-            continue
-        res = cv2.matchTemplate(map_roi, template, cv2.TM_CCOEFF_NORMED)
-        _, max_val, _, _ = cv2.minMaxLoc(res)
-        logging.debug(f"  - Checking for {name:<20} | Confidence: {max_val:.2f}")
-        if max_val > best_match_score:
-            best_match_score, best_match_name = max_val, name
-    if best_match_score >= threshold:
-        logging.info(
-            f"└──> Best Match Found: {best_match_name} (Score: {best_match_score:.2f})"
-        )
-        return best_match_name
-    else:
-        logging.warning(
-            f"└──> No map found above threshold {threshold}. Best attempt was {best_match_name} (Score: {best_match_score:.2f})"
-        )
+def find_best_map_match(map_roi, map_templates):
+    """
+    Finds the best map match using SIFT feature detection, FLANN matching, and
+    Lowe's ratio test for robust, scale-invariant matching.
+    """
+    logging.info("--- MAP DETECTION (SIFT Feature-Based) ---")
+    
+    # Initialize SIFT detector
+    sift = cv2.SIFT_create()
+
+    # Find keypoints and descriptors in the scoreboard's map ROI
+    try:
+        kp1, des1 = sift.detectAndCompute(map_roi, None)
+        if des1 is None or len(kp1) < 2:
+            logging.warning("Could not find enough features in the scoreboard map image.")
+            return "Unknown"
+    except cv2.error as e:
+        logging.error(f"OpenCV error when processing scoreboard map ROI: {e}")
         return "Unknown"
+
+    best_match_name = "Unknown"
+    highest_good_matches = 0
+
+    # FLANN Matcher parameters
+    FLANN_INDEX_KDTREE = 1
+    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    search_params = dict(checks=50)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
+
+    # Iterate through all the map names and their associated templates
+    for map_name, templates in map_templates.items():
+        for i, template_image in enumerate(templates):
+            if template_image is None:
+                continue
+            
+            try:
+                # Find keypoints and descriptors in the template image
+                kp2, des2 = sift.detectAndCompute(template_image, None)
+                if des2 is None or len(kp2) < 2:
+                    continue
+
+                # Find the 2 best matches for each descriptor
+                matches = flann.knnMatch(des1, des2, k=2)
+
+                # Apply Lowe's Ratio Test to find good matches
+                good_matches = []
+                for m, n in matches:
+                    if m.distance < 0.7 * n.distance:
+                        good_matches.append(m)
+                
+                good_matches_count = len(good_matches)
+                logging.debug(f"  - Checking for {map_name:<20} (template {i+1}) | Good Matches: {good_matches_count}")
+
+                if good_matches_count > highest_good_matches:
+                    highest_good_matches = good_matches_count
+                    best_match_name = map_name
+            
+            except cv2.error as e:
+                logging.error(f"OpenCV error when processing template '{map_name}' (template {i+1}): {e}")
+                continue
+
+    logging.info(f"└──> Best Match Found: {best_match_name} (Good Matches: {highest_good_matches})")
+    
+    # Set a minimum threshold for good matches to be considered valid
+    if highest_good_matches < 10: # A reasonable threshold for SIFT + Lowe's
+        logging.warning(f"Match count for '{best_match_name}' is below threshold. Result may be unreliable.")
+        return "Unknown"
+
+    return best_match_name
 
 
 def is_scoreboard_image(image):
@@ -168,10 +217,13 @@ def analyze_scoreboard(scoreboard_img_path):
     if not KNOWN_PLAYERS:
         return None
 
-    map_templates = {
-        os.path.basename(p).split(".")[0]: cv2.imread(os.path.join(MAP_TEMPLATES_PATH, p))
-        for p in os.listdir(MAP_TEMPLATES_PATH) if p.endswith(".png")
-    }
+    map_templates = defaultdict(list)
+    for p in os.listdir(MAP_TEMPLATES_PATH):
+        if p.endswith(".png"):
+            map_name = p.split('_')[0]
+            template_img = cv2.imread(os.path.join(MAP_TEMPLATES_PATH, p))
+            if template_img is not None:
+                map_templates[map_name].append(template_img)
     hero_templates = {
         os.path.basename(p).split(".")[0]: cv2.imread(os.path.join(HERO_TEMPLATES_PATH, p))
         for p in os.listdir(HERO_TEMPLATES_PATH) if p.endswith(".png")
@@ -196,7 +248,7 @@ def analyze_scoreboard(scoreboard_img_path):
     ROI_TEAM1_NAMES = scoreboard_img[roi_coords["team1_names"][1]:roi_coords["team1_names"][3], roi_coords["team1_names"][0]:roi_coords["team1_names"][2]]
     ROI_TEAM2_NAMES = scoreboard_img[roi_coords["team2_names"][1]:roi_coords["team2_names"][3], roi_coords["team2_names"][0]:roi_coords["team2_names"][2]]
 
-    detected_map = find_best_map_match(ROI_MAP, map_templates, MAP_CONFIDENCE_THRESHOLD)
+    detected_map = find_best_map_match(ROI_MAP, map_templates)
 
     logging.info("--- TEAM 1 HERO DETECTION ---")
     team1_heroes_found = find_heroes_in_roi(ROI_HEROES_1, hero_templates, HERO_DETECTION_THRESHOLD)
